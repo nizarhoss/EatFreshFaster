@@ -1,6 +1,12 @@
 //# EatFreshFaster
 
+
+
+
+
+
 import javax.swing.*;
+import javax.swing.event.*;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -11,25 +17,28 @@ import java.awt.event.*;
 
 public class OrderCalculatorGUI extends JFrame
 {
-   private BagelPanel bagels;     // Bagel panel
-   private ToppingPanel toppings; // Topping panel
-   private CoffeePanel coffee;    // Coffee panel
+   private BreadPanel bread;     // Bagel panel
+   private CheesePanel cheese; // Topping panel
+   private MeatPanel meat; // Topping panel
+   private VeggiePanel veggies; // Topping panel
+   private SaucePanel sauce; // Topping panel
+   private ExtrasPanel extras; // Topping panel
    private GreetingPanel banner;  // To display a greeting
 
    private JPanel startPanel;		// Start panel
    private JTabbedPane mainPanel;	// Main panel
    private JPanel buttonPanel;    // To hold the buttons
    private JPanel checkoutPanel;    // To hold the buttons
-   private JButton calcButton;    // To calculate the cost
    private JButton exitButton;    // To exit the application
    private JButton previousButton;// To go to previous tab
    private JButton nextButton;	  // To go to next tab
    private JButton startButton;
+   private JTextArea textArea;
 
 // Constants for set up of the window
    public static final int WIDTH = 600;
    public static final int HEIGHT = 600;
-   private static final int TABS = 4; // number of tabs in main panel
+   private static final int TABS = 7; // number of tabs in main panel
    private final double TAX_RATE = 0.06; // Sales tax rate
    /**
       Constructor
@@ -51,15 +60,18 @@ public class OrderCalculatorGUI extends JFrame
 
       // Create the custom panels.
       banner = new GreetingPanel();
-      bagels = new BagelPanel();
-      toppings = new ToppingPanel();
-      coffee = new CoffeePanel();
+      bread = new BreadPanel();
+      cheese = new CheesePanel();
+      meat = new MeatPanel();
+      veggies = new VeggiePanel();
+      sauce = new SaucePanel();
+      extras = new ExtrasPanel();
 
       // Create the start, button, main, and checkout panels.
       buildStartPanel();
       buildButtonPanel();
-      buildMainPanel();
       buildCheckoutPanel();
+      buildMainPanel();
 
       // Add the components to the content pane.
       add(banner, BorderLayout.NORTH);
@@ -74,10 +86,12 @@ public class OrderCalculatorGUI extends JFrame
    */
    private void buildStartPanel()
    {
+	   setLayout(new BorderLayout());
+	   
 	   startPanel = new JPanel();			
 	   startButton = new JButton("Start Order");
 	   startButton.addActionListener(new StartButtonListener());
-	   startPanel.add(startButton);
+	   startPanel.add(startButton, BorderLayout.CENTER);
    }
    /**
    The buildMainPanel method builds the tabbed pane.
@@ -85,20 +99,15 @@ public class OrderCalculatorGUI extends JFrame
    private void buildMainPanel()
    {
 	  mainPanel = new JTabbedPane(JTabbedPane.RIGHT);	//creates TabbedPane, 
-   	   
- 	  JComponent panel1 = bagels;
- 	  mainPanel.addTab("Tab 1", null, panel1);	//creates first tab using bagels panel
- 	  
- 	  
- 	  JComponent panel2 = toppings;
- 	  mainPanel.addTab("Tab 2", null, panel2); 
- 	
- 	  
- 	  JComponent panel3 = coffee;
- 	  mainPanel.addTab("Tab 3", null, panel3);
- 	  
- 	 JComponent panel4 = checkoutPanel;
-	  mainPanel.addTab("Tab 4", null, panel4);
+  
+ 	  mainPanel.addTab("Bread", null, bread);	//creates first tab using bread panel	  
+ 	  mainPanel.addTab("Cheese", null, cheese);
+ 	  mainPanel.addTab("Meat", null, meat);
+ 	  mainPanel.addTab("Veggies", null, veggies);
+ 	  mainPanel.addTab("Sauce", null, sauce);
+ 	  mainPanel.addTab("Extras", null, extras);
+ 	  mainPanel.addTab("Checkout", null, checkoutPanel);
+	  mainPanel.addChangeListener(new TabListener());
    }
    /**
    The buildButtonPanel method builds the button panel.
@@ -111,23 +120,19 @@ public class OrderCalculatorGUI extends JFrame
       // Create the buttons.      
       previousButton = new JButton("Previous");
       nextButton = new JButton("Next");
-            
-      calcButton = new JButton("Place Order");
+
       exitButton = new JButton("Cancel Order");
 
       // Register the action listeners.
       previousButton.addActionListener(new PreviousButtonListener());
       nextButton.addActionListener(new NextButtonListener());      
-      calcButton.addActionListener(new CalcButtonListener());
       exitButton.addActionListener(new ExitButtonListener());
 
       // Add the buttons to the button panel.
       buttonPanel.add(previousButton);
       buttonPanel.add(nextButton);
-      buttonPanel.add(calcButton);
       buttonPanel.add(exitButton);
       previousButton.setEnabled(false);
-      calcButton.setEnabled(false);
    }
    /**
    The buildCheckoutPanel method builds the checkout panel.
@@ -135,27 +140,23 @@ public class OrderCalculatorGUI extends JFrame
    private void buildCheckoutPanel()	//work in progress
    {
       // Create a panel for the buttons.
-      checkoutPanel = new JPanel();
+      checkoutPanel = new JPanel();      
+      
+      textArea = new JTextArea(30, 30);
+      JScrollPane scrollPane = new JScrollPane(textArea); 
+      textArea.setEditable(false);
+      
+      setLayout(new BorderLayout());
+      checkoutPanel.add(textArea, BorderLayout.CENTER);
 
-   // Variables to hold the subtotal, tax, and total
-      double subtotal, tax, total;
-
+      
       // Calculate the subtotal.
-      subtotal = bagels.getBagelCost() + 
-                 toppings.getToppingCost() +
-                 coffee.getCoffeeCost();
-
-      // Calculate the sales tax.
-      tax = subtotal * TAX_RATE;
-
-      // Calculate the total.
-      total = subtotal + tax;
-
-      // Display the charges.
-       //(null, String.format("Subtotal: $%,.2f\n" +
-       //                "Tax: $%,.2f\n" +
-       //                "Total: $%,.2f",
-       //                subtotal, tax, total));
+      updateCheckout(bread.getBreadCost(), bread.getBreadType(), 
+ 		  		cheese.getCheeseCost(), cheese.getCheeseType(),
+ 		  		meat.getMeatCost(), meat.getMeatType(),
+ 		  		veggies.getVeggieCost(), veggies.getVeggieType(),
+ 		  		sauce.getSauceCost(), sauce.getSauceType(),
+ 		  		extras.getExtrasCost(), extras.getExtrasType());
    }
    /**
       Private inner class that handles the event when
@@ -166,6 +167,7 @@ public class OrderCalculatorGUI extends JFrame
    {
       public void actionPerformed(ActionEvent e)
       {
+    	  
     	  mainPanel.setSelectedIndex(TABS-1);
       }
    }
@@ -192,13 +194,7 @@ public class OrderCalculatorGUI extends JFrame
    {
       public void actionPerformed(ActionEvent e)
       {
-    	  if(mainPanel.getSelectedIndex() > 0 || nextButton.isEnabled() == false)		
-    	  {
-    		  mainPanel.setSelectedIndex( mainPanel.getSelectedIndex()-1);	//enables the "next" button when any tab other than tab 1 is selected
-    		  nextButton.setEnabled(true);
-    	  }
-    	  if(mainPanel.getSelectedIndex() <= 0)		//disables the "previous" button when tab 1 is selected
-    		  previousButton.setEnabled(false);
+    	  mainPanel.setSelectedIndex( mainPanel.getSelectedIndex()-1);	
       }
    }
    /**
@@ -209,13 +205,8 @@ public class OrderCalculatorGUI extends JFrame
    {
       public void actionPerformed(ActionEvent e)
       {
-    	  if(mainPanel.getSelectedIndex() < TABS - 1 || previousButton.isEnabled() == false)		
-    	  {
-    		  mainPanel.setSelectedIndex( mainPanel.getSelectedIndex()+1);	//enables the "previous" button when any tab other than tab 1 is selected
-    		  previousButton.setEnabled(true);
-    	  }
-    	  if(mainPanel.getSelectedIndex() >= TABS - 1)		//disables the "next" button when tab 1 is selected
-    		  nextButton.setEnabled(false);
+    	  mainPanel.setSelectedIndex( mainPanel.getSelectedIndex()+1);
+    	  
       }
    }
    /**
@@ -226,12 +217,62 @@ public class OrderCalculatorGUI extends JFrame
    {
       public void actionPerformed(ActionEvent e)
       {
-    	  remove(startPanel);						//starts ordering process by adding the buttun panel to the bottom of the
+    	  remove(startPanel);						//starts ordering process by adding the button panel to the bottom of the
     	  add(mainPanel, BorderLayout.CENTER);		//window, removing the start panel and replacing it with the main panel.
     	  add(buttonPanel, BorderLayout.SOUTH);		
     	  revalidate();								//refreshes the frame to show changes
       }
    }
+   
+   private class TabListener implements ChangeListener
+   {
+	   public void stateChanged(ChangeEvent e) 
+	   {
+		   updateCheckout(bread.getBreadCost(), bread.getBreadType(), 
+   		  		cheese.getCheeseCost(), cheese.getCheeseType(),
+   		  		meat.getMeatCost(), meat.getMeatType(),
+   		  		veggies.getVeggieCost(), veggies.getVeggieType(),
+   		  		sauce.getSauceCost(), sauce.getSauceType(),
+   		  		extras.getExtrasCost(), extras.getExtrasType());
+		   
+		   if(mainPanel.getSelectedIndex() >= TABS - 1)		
+		   	   nextButton.setEnabled(false);				//disables the "next" button when tab 1 is selected
+		   else
+			   nextButton.setEnabled(true);					//enables the "next" button when tab 1 is not selected
+			   
+	   	   if(mainPanel.getSelectedIndex() <= 0)		
+	   		   previousButton.setEnabled(false);		//disables the "previous" button when the last tab is selected
+	   	   else
+	   		previousButton.setEnabled(true);	   	   	//enables the "previous" button when the last tab is not selected
+	   }   
+   }
+   private void updateCheckout(double breadCost, String breadType,
+		   						double cheese, String cheeseType, 
+		   						double meat, String meatType,
+		   						double veggies , String veggieType,
+		   						double sauce, String sauceType,
+		   						double extras, String extrasType)
+   {
+	// Variables to hold the subtotal, tax, and total
+	      double subtotal, tax, total;
+	      
+	      // Calculate the subtotal.
+	      subtotal = breadCost + cheese + meat + veggies + sauce + extras;
+	      tax = subtotal * TAX_RATE;
+	      total = subtotal + tax;
+	      
+	      // Display the charges.
+	      
+	      textArea.setText(String.format(breadType + "\n" + cheeseType + "\n" + meatType + "\n"
+	    		  						+ veggieType + "\n"+ sauceType + "\n"+ extrasType + "\n"));
+	      
+	      textArea.append(String.format("Subtotal: $%,.2f\n" 
+	    		  						+ "Tax: $%,.2f\n" 
+	    		  						+ "Total: $%,.2f", subtotal, tax, total));
+	      
+   }
+   
+  
    /**
       main method
    */
@@ -239,6 +280,7 @@ public class OrderCalculatorGUI extends JFrame
    public static void main(String[] args)
    {
       new OrderCalculatorGUI();
+      
    }
 }
 
